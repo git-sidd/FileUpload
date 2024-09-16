@@ -48,14 +48,14 @@ function isFileTypeSupported(fileType,supportedFileType){
     return supportedFileType.includes(fileType);
 }
 
-async function uploadFileToCloudinary(file,folder){
-    const options={folder};
+async function uploadFileToCloudinary(file,folder,resourceType = "image"){
+    const options={folder,resource_type: resourceType};
     console.log("tempfilepath:",file.tempFilePath);
     return await cloudinary.uploader.upload(file.tempFilePath,options)
 }
 export const imageUpload=async(req,res)=>{
     try {
-        const {name,tags,email}=req.body
+    const {name,tags,email}=req.body
     console.log(name,email,tags);
 
     const file=req.files.imageFile
@@ -76,10 +76,18 @@ export const imageUpload=async(req,res)=>{
 
     console.log("uploading file to siddhesh folder")
     console.log("file:",file)
-    const response=await uploadFileToCloudinary(file,"siddhesh");
+    const response=await uploadFileToCloudinary(file,"siddhesh","image");
     console.log(response)
 
+    console.log("secureurl",response.secure_url);
+
     //storing in db..
+    const createUser=await File.create({
+        name,
+        email,
+        tags,
+        fileUrl:response.secure_url
+    })
 
     res.status(200).json({
         success:true,
@@ -97,6 +105,54 @@ export const imageUpload=async(req,res)=>{
     
 
 
+}
+
+export const videoUpload=async(req,res)=>{
+    try {
+        const {name,tags,email}=req.body
+        console.log(name,email,tags);
+    
+        const file=req.files.videoFile
+        console.log(file);
+
+        const supportedFileType=["mp4","mov"]
+        const fileType=file.name.split('.')[1].toLowerCase();
+        console.log("filetype:",fileType)
+        if(!isFileTypeSupported(fileType,supportedFileType)){
+            res.status(400).json({
+                success:false,
+                message:"File Type Not Supported!!"
+            })
+            console.log("filetype not supported!!")
+        }
+    
+        console.log("uploading file to siddhesh folder")
+        console.log("file:",file)
+        const response=await uploadFileToCloudinary(file,"siddhesh","video");
+        console.log(response)
+    
+        //storing in db..
+        const createUser=await File.create({
+            name,
+            email,
+            tags,
+            fileUrl:response.secure_url
+        })
+    
+        res.status(200).json({
+            success:true,
+            message:"file uploaded successfully"
+        })
+
+
+    } catch (error) {
+        console.error(error)
+        res.status(400).json({
+            success:false,
+            message:"error in uploading video",
+            
+        })
+    }
 }
 
 
